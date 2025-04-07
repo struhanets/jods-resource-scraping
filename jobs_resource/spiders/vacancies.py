@@ -1,4 +1,3 @@
-import re
 import time
 
 import scrapy
@@ -12,10 +11,16 @@ from selenium.webdriver.support import expected_conditions as EC
 
 nlp = spacy.load("en_core_web_sm")
 
+TECH_STACK = {
+    "Python", "Django", "Flask", "FastAPI", "PostgreSQL", "MongoDB", "MySQL",
+    "Git", "Docker", "Kubernetes", "AWS", "GCP", "Azure", "Redis", "Celery",
+    "RabbitMQ", "DRF", "GraphQL", "REST", "CI/CD", "Linux", "PyTorch", "Pandas",
+    "NumPy", "React", "JavaScript", "HTML", "CSS", "SQL", "API", "asyncio", "OOP",
+}
+
 class VacanciesSpider(scrapy.Spider):
     name = "vacancies"
     allowed_domains = ["jobs.dou.ua"]
-    # url = "https://jobs.dou.ua/vacancies/?category=Python"
     expirience_levels = {
         "trainee": "&exp=0-1",
         "junior": "&exp=1-3",
@@ -60,36 +65,27 @@ class VacanciesSpider(scrapy.Spider):
         for link in vacancies_links:
             yield scrapy.Request(link, callback=self.parse_vacancy, cb_kwargs={"experience": experience})
 
-    def extract_quali_block(self, text):
-        match = re.search(r"Qualifications | Що очікуємо від тебе | Requirements | Вимоги | Skills", text, re.IGNORECASE)
+    def extract_skills_from_text(self, text: str, tech_stack: set) -> list:
+        found_skills = []
+        lowered_text = text.lower()
+        for tech in tech_stack:
+            if tech.lower() in lowered_text:
+                found_skills.append(tech)
+        return found_skills
 
-        if match is not None:
-            return match.group()
-        return text
-
-
-    def get_keywords(self, text):
-        doc = nlp(text)
-        keywords = set()
-        for token in doc:
-            if token.pos_ in ["PROPN", "NOUN"] and token.is_alpha:
-                keywords.add(token.text)
-
-        return keywords
 
 
     def parse_vacancy(self, response, experience):
 
-        full_text = " ".join(response.css("div.vacancy-section ::text").getall()).strip()
+        text_blocks = response.css(".vacancy-section").xpath(".//text()").getall()
+        full_text = " ".join(text_blocks).strip()
 
-        requirements = self.extract_quali_block(full_text)
-
-        skills = self.get_keywords(requirements)
+        skills = self.extract_skills_from_text(full_text, TECH_STACK)
 
         item_data = {
             "name": response.css(".l-vacancy > h1::text").get(),
             "experience": experience,
-            # "skills": skills
+            "skills": skills
 
         }
         yield item_data
