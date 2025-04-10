@@ -1,15 +1,12 @@
 import time
 
 import scrapy
-import spacy
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from scrapy.selector import Selector
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
-
-nlp = spacy.load("en_core_web_sm")
 
 TECH_STACK = {
     "Python", "Django", "Flask", "FastAPI", "PostgreSQL", "MongoDB", "MySQL",
